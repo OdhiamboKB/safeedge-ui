@@ -1,7 +1,7 @@
-import IncidentForm from './IncidentForm'
+import KPIDashboard from './KPIDashboard'
 
 function App() {
-  return <IncidentForm onSubmit={(data) => console.log('Submitted:', data)} />
+  return <KPIDashboard />
 }
 
 export default App
