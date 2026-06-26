@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import KPIDashboard from './KPIDashboard'
 import IncidentFeed from './IncidentFeed'
 import IncidentForm from './IncidentForm'
+import IncidentPreviewer from './IncidentPreviewer'
 
 function Nav() {
   const navStyle = {
@@ -55,6 +56,9 @@ function Nav() {
         <NavLink to="/incidents/new" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
           Report Incident
         </NavLink>
+        <NavLink to="/incidents/editor" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+          Editor
+        </NavLink>
       </div>
     </nav>
   )
@@ -68,6 +72,7 @@ function App() {
         <Route path="/" element={<KPIDashboard />} />
         <Route path="/incidents" element={<IncidentFeed />} />
         <Route path="/incidents/new" element={<IncidentForm onSubmit={(data) => console.log('Submitted:', data)} />} />
+        <Route path="/incidents/editor" element={<IncidentPreviewer />} />
       </Routes>
     </BrowserRouter>
   )
