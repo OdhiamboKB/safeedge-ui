@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import KPIDashboard from './KPIDashboard'
+import IncidentFeed from './IncidentFeed'
 import IncidentForm from './IncidentForm'
 
-// ── NAV COMPONENT ────────────────────────────────────
 function Nav() {
   const navStyle = {
     background: '#0d2b12',
@@ -23,7 +23,6 @@ function Nav() {
     fontWeight: '700',
     color: '#5dca8a',
     textDecoration: 'none',
-    letterSpacing: '0.02em',
   }
 
   const linkStyle = {
@@ -35,7 +34,6 @@ function Nav() {
     textDecoration: 'none',
     padding: '6px 12px',
     borderRadius: '4px',
-    transition: 'all 0.15s',
   }
 
   const activeLinkStyle = {
@@ -48,31 +46,27 @@ function Nav() {
     <nav style={navStyle}>
       <NavLink to="/" style={logoStyle}>KB SafeEdge</NavLink>
       <div style={{ display: 'flex', gap: '8px' }}>
-        <NavLink
-          to="/"
-          end
-          style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}
-        >
+        <NavLink to="/" end style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
           M12 Dashboard
         </NavLink>
-        <NavLink
-          to="/incidents/new"
-          style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}
-        >
-          M2 Report Incident
+        <NavLink to="/incidents" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+          M2 Incidents
+        </NavLink>
+        <NavLink to="/incidents/new" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+          Report Incident
         </NavLink>
       </div>
     </nav>
   )
 }
 
-// ── APP ROOT WITH ROUTER ─────────────────────────────
 function App() {
   return (
     <BrowserRouter>
       <Nav />
       <Routes>
         <Route path="/" element={<KPIDashboard />} />
+        <Route path="/incidents" element={<IncidentFeed />} />
         <Route path="/incidents/new" element={<IncidentForm onSubmit={(data) => console.log('Submitted:', data)} />} />
       </Routes>
     </BrowserRouter>
