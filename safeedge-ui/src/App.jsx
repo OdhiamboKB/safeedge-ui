@@ -3,6 +3,7 @@ import KPIDashboard from './KPIDashboard'
 import IncidentFeed from './IncidentFeed'
 import IncidentForm from './IncidentForm'
 import IncidentPreviewer from './IncidentPreviewer'
+import TRIRCalculator from './TRIRCalculator'
 
 function Nav() {
   const navStyle = {
@@ -59,6 +60,9 @@ function Nav() {
         <NavLink to="/incidents/editor" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
           Editor
         </NavLink>
+        <NavLink to="/calculator" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+  TRIR Calc
+</NavLink>
       </div>
     </nav>
   )
@@ -73,6 +77,7 @@ function App() {
         <Route path="/incidents" element={<IncidentFeed />} />
         <Route path="/incidents/new" element={<IncidentForm onSubmit={(data) => console.log('Submitted:', data)} />} />
         <Route path="/incidents/editor" element={<IncidentPreviewer />} />
+        <Route path="/calculator" element={<TRIRCalculator />} />
       </Routes>
     </BrowserRouter>
   )
