@@ -5,6 +5,7 @@ import IncidentForm from './IncidentForm'
 import IncidentPreviewer from './IncidentPreviewer'
 import TRIRCalculator from './TRIRCalculator'
 import PermitTimer from './PermitTimer'
+import CurrencyConverter from './CurrencyConverter'
 
 function Nav() {
   const navStyle = {
@@ -67,6 +68,9 @@ function Nav() {
 <NavLink to="/permit-timer" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
   M10 PTW Timer
 </NavLink>
+<NavLink to="/currency-converter" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+  Currency Converter
+</NavLink>
       </div>
     </nav>
   )
@@ -83,6 +87,7 @@ function App() {
         <Route path="/incidents/editor" element={<IncidentPreviewer />} />
         <Route path="/calculator" element={<TRIRCalculator />} />
         <Route path="/permit-timer" element={<PermitTimer />} />
+        <Route path="/currency-converter" element={<CurrencyConverter />} />
       </Routes>
     </BrowserRouter>
   )
