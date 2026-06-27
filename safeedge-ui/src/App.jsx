@@ -6,12 +6,12 @@ import IncidentPreviewer from './IncidentPreviewer'
 import TRIRCalculator from './TRIRCalculator'
 import PermitTimer from './PermitTimer'
 import CurrencyConverter from './CurrencyConverter'
+import AuditBoard from './AuditBoard'
 
 function Nav() {
   const navStyle = {
     background: '#0d2b12',
-    padding: '0 32px',
-    height: '52px',
+    padding: '8px 24px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -19,6 +19,8 @@ function Nav() {
     position: 'sticky',
     top: 0,
     zIndex: 100,
+    flexWrap: 'wrap',
+    gap: '8px',
   }
 
   const logoStyle = {
@@ -27,17 +29,19 @@ function Nav() {
     fontWeight: '700',
     color: '#5dca8a',
     textDecoration: 'none',
+    flexShrink: 0,
   }
 
   const linkStyle = {
     fontFamily: 'monospace',
-    fontSize: '10px',
-    letterSpacing: '0.12em',
+    fontSize: '9px',
+    letterSpacing: '0.10em',
     textTransform: 'uppercase',
     color: '#a8d5b5',
     textDecoration: 'none',
-    padding: '6px 12px',
+    padding: '5px 10px',
     borderRadius: '4px',
+    whiteSpace: 'nowrap',
   }
 
   const activeLinkStyle = {
@@ -46,31 +50,31 @@ function Nav() {
     color: '#5dca8a',
   }
 
+  const links = [
+    { to: '/',                  label: 'M12 Dashboard',   end: true },
+    { to: '/incidents',         label: 'M2 Incidents',    end: false },
+    { to: '/incidents/new',     label: 'Report Incident', end: false },
+    { to: '/incidents/editor',  label: 'Editor',          end: false },
+    { to: '/calculator',        label: 'TRIR Calc',       end: false },
+    { to: '/permit-timer',      label: 'PTW Timer',       end: false },
+    { to: '/currency',          label: 'Currency',        end: false },
+    { to: '/audit-board',       label: 'M4 Audit Board',  end: false },
+  ]
+
   return (
     <nav style={navStyle}>
       <NavLink to="/" style={logoStyle}>KB SafeEdge</NavLink>
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <NavLink to="/" end style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-          M12 Dashboard
-        </NavLink>
-        <NavLink to="/incidents" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-          M2 Incidents
-        </NavLink>
-        <NavLink to="/incidents/new" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-          Report Incident
-        </NavLink>
-        <NavLink to="/incidents/editor" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-          Editor
-        </NavLink>
-        <NavLink to="/calculator" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-  TRIR Calc
-</NavLink>
-<NavLink to="/permit-timer" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-  M10 PTW Timer
-</NavLink>
-<NavLink to="/currency-converter" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
-  Currency Converter
-</NavLink>
+      <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+        {links.map(({ to, label, end }) => (
+          <NavLink
+            key={to}
+            to={to}
+            end={end}
+            style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}
+          >
+            {label}
+          </NavLink>
+        ))}
       </div>
     </nav>
   )
@@ -87,7 +91,8 @@ function App() {
         <Route path="/incidents/editor" element={<IncidentPreviewer />} />
         <Route path="/calculator" element={<TRIRCalculator />} />
         <Route path="/permit-timer" element={<PermitTimer />} />
-        <Route path="/currency-converter" element={<CurrencyConverter />} />
+        <Route path="/currency" element={<CurrencyConverter />} />
+        <Route path="/audit-board" element={<AuditBoard />} />
       </Routes>
     </BrowserRouter>
   )
