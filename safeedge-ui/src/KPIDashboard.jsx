@@ -2,28 +2,10 @@ import { useState, useEffect } from 'react'
 
 // ── KPI DASHBOARD COMPONENT ──────────────────────────
 // M12 Dashboard — AI Analytics
-// Concept: useEffect simulates a data fetch on mount
-// In production: replace simulateFetch with a real
-// fetch() call to the Flask API /calculate endpoint
+// Now connected to SafeEdge Flask API
+// Endpoint: GET /api/kpis
 
-// Simulated API response — mirrors /calculate endpoint
-function simulateFetch() {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        trir: 0.42,
-        ltifr: 0.18,
-        ltisr: 0.00,
-        daysLTIFree: 47,
-        openActions: 7,
-        nearMisses: 3,
-        trainingCompliance: 94,
-        period: 'June 2026',
-        site: 'Site A',
-      })
-    }, 1500) // 1.5 second delay simulates network request
-  })
-}
+const API_BASE = 'http://127.0.0.1:5000/api'
 
 function KPICard({ label, value, unit, status }) {
   const statusColors = {
@@ -79,25 +61,23 @@ function KPIDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // ── useEffect — runs once on mount ────────────────
-  // Empty dependency array [] means: run this effect
-  // once when the component first renders, then stop.
-  // In production: replace simulateFetch() with:
-  // fetch('https://api.kbsafeedge.com/v1/calculate', { headers })
-  //   .then(res => res.json())
-  //   .then(data => setKpis(data))
+  // ── useEffect — fetches from Flask API on mount ───
   useEffect(() => {
     setLoading(true)
-    simulateFetch()
+    fetch(`${API_BASE}/kpis`)
+      .then(res => {
+        if (!res.ok) throw new Error('API error')
+        return res.json()
+      })
       .then(data => {
         setKpis(data)
         setLoading(false)
       })
       .catch(err => {
-        setError('Failed to load KPI data.')
+        setError('Could not connect to SafeEdge API. Is the Flask server running?')
         setLoading(false)
       })
-  }, []) // ← empty array = run once on mount
+  }, [])
 
   // ── LOADING STATE ─────────────────────────────────
   if (loading) {
@@ -111,7 +91,7 @@ function KPIDashboard() {
             animation: 'spin 0.8s linear infinite',
           }} />
           <p style={{ fontFamily: 'monospace', fontSize: '11px', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#8a8070' }}>
-            Loading KPI data...
+            Connecting to SafeEdge API...
           </p>
           <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -123,7 +103,12 @@ function KPIDashboard() {
   if (error) {
     return (
       <div style={{ background: '#f5f2eb', minHeight: '100vh', padding: '48px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: '#8b1a1a', fontFamily: 'monospace' }}>{error}</p>
+        <div style={{ background: '#fdf0f0', border: '1px solid #e8c0c0', borderRadius: '8px', padding: '24px', maxWidth: '480px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8b1a1a', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>
+            API Connection Error
+          </p>
+          <p style={{ fontSize: '13px', color: '#4a4535' }}>{error}</p>
+        </div>
       </div>
     )
   }
@@ -146,18 +131,21 @@ function KPIDashboard() {
           <div style={{ textAlign: 'right' }}>
             <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8a8070' }}>{kpis.site}</p>
             <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8a8070' }}>{kpis.period}</p>
+            <p style={{ fontFamily: 'monospace', fontSize: '10px', color: '#5dca8a', marginTop: '4px' }}>
+              ● Live — SafeEdge API
+            </p>
           </div>
         </header>
 
         {/* KPI Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px', marginBottom: '32px' }}>
-          <KPICard label="TRIR"              value={kpis.trir}                unit=""    status="warn" />
-          <KPICard label="LTIFR"             value={kpis.ltifr}               unit=""    status="ok" />
-          <KPICard label="LTISR"             value={kpis.ltisr}               unit=""    status="ok" />
-          <KPICard label="Days LTI-Free"     value={kpis.daysLTIFree}         unit="days" status="ok" />
-          <KPICard label="Open Actions"      value={kpis.openActions}         unit=""    status="warn" />
-          <KPICard label="Near Misses"       value={kpis.nearMisses}          unit=""    status="neutral" />
-          <KPICard label="Training Compliance" value={kpis.trainingCompliance} unit="%"  status="ok" />
+          <KPICard label="TRIR"                value={kpis.trir}                unit=""     status="warn" />
+          <KPICard label="LTIFR"               value={kpis.ltifr}               unit=""     status="ok" />
+          <KPICard label="LTISR"               value={kpis.ltisr}               unit=""     status="ok" />
+          <KPICard label="Days LTI-Free"       value={kpis.days_lti_free}       unit="days" status="ok" />
+          <KPICard label="Open Actions"        value={kpis.open_actions}        unit=""     status="warn" />
+          <KPICard label="Near Misses"         value={kpis.near_misses}         unit=""     status="neutral" />
+          <KPICard label="Training Compliance" value={kpis.training_compliance} unit="%"    status="ok" />
         </div>
 
         {/* AI Insight Panel */}
@@ -182,12 +170,12 @@ function KPIDashboard() {
           </div>
           <div>
             <p style={{ fontSize: '14px', color: '#a8d5b5', lineHeight: '1.6', marginBottom: '8px' }}>
-              TRIR of <strong style={{ color: '#fff' }}>0.42</strong> is above the target threshold of 0.30. 
-              The slip incident at Loading Bay (INC-2026-047) and the chemical spill (INC-2026-046) 
-              are the primary contributors. Drainage system inspection overdue action is the highest priority item.
+              TRIR of <strong style={{ color: '#fff' }}>{kpis.trir}</strong> is above the target threshold of 0.30.
+              {kpis.open_actions > 0 && ` ${kpis.open_actions} open actions require attention.`}
+              {kpis.training_compliance < 100 && ` Training compliance at ${kpis.training_compliance}% — review expiring certificates.`}
             </p>
             <p style={{ fontFamily: 'monospace', fontSize: '10px', color: '#3d6645', letterSpacing: '0.06em' }}>
-              Generated · ISO 45001 Cl. 9.3 · {kpis.period}
+              Generated · ISO 45001 Cl. 9.3 · {kpis.period} · Live from SafeEdge API
             </p>
           </div>
         </div>
