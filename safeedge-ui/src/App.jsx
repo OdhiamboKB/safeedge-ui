@@ -4,6 +4,7 @@ import IncidentFeed from './IncidentFeed'
 import IncidentForm from './IncidentForm'
 import IncidentPreviewer from './IncidentPreviewer'
 import TRIRCalculator from './TRIRCalculator'
+import PermitTimer from './PermitTimer'
 
 function Nav() {
   const navStyle = {
@@ -63,6 +64,9 @@ function Nav() {
         <NavLink to="/calculator" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
   TRIR Calc
 </NavLink>
+<NavLink to="/permit-timer" style={({ isActive }) => isActive ? activeLinkStyle : linkStyle}>
+  M10 PTW Timer
+</NavLink>
       </div>
     </nav>
   )
@@ -78,6 +82,7 @@ function App() {
         <Route path="/incidents/new" element={<IncidentForm onSubmit={(data) => console.log('Submitted:', data)} />} />
         <Route path="/incidents/editor" element={<IncidentPreviewer />} />
         <Route path="/calculator" element={<TRIRCalculator />} />
+        <Route path="/permit-timer" element={<PermitTimer />} />
       </Routes>
     </BrowserRouter>
   )
