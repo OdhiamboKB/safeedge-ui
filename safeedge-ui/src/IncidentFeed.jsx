@@ -1,45 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
-// ── INCIDENT DATA ────────────────────────────────────
-const INCIDENTS = [
-  {
-    id: 'INC-2026-047',
-    title: 'Slip on Wet Surface — Loading Bay Entrance',
-    severity: 'High',
-    date: 'May 2, 2026 · 09:14 EAT',
-    location: 'Site A · Loading Bay',
-    reporter: 'James Omondi',
-    reporterInitials: 'JO',
-    description: 'Worker reported a slip and fall near the loading bay entrance following overnight rainfall. The drainage channel was blocked, causing water pooling across the pedestrian walkway. No lost time recorded. Worker received first aid on site.',
-    rootCause: 'Why did the worker slip? Water had pooled on the walkway. Why was water pooling? The drainage channel was blocked. Why was it blocked? Weekly drain inspection was overdue by 3 days. Root cause: absence of a digital inspection tracking system.',
-    status: 'Open',
-  },
-  {
-    id: 'NM-2026-048',
-    title: 'Unsecured Load — Forklift Operation Area',
-    severity: 'NearMiss',
-    date: 'May 1, 2026 · 14:32 EAT',
-    location: 'Site A · Warehouse B',
-    reporter: 'Amina Wanjiku',
-    reporterInitials: 'AW',
-    description: 'Supervisor observed a pallet stack exceeding safe height in the active forklift operating zone. No injury occurred. Work was stopped immediately and the load was re-secured. This is the second near-miss in this area in 30 days.',
-    rootCause: 'Immediate cause: pallet stack exceeded safe stacking height. Load re-secured and area barricaded. Forklift operator briefed on safe stacking limits.',
-    status: 'Under Review',
-  },
-  {
-    id: 'INC-2026-046',
-    title: 'Chemical Spill — Battery Charging Room',
-    severity: 'Medium',
-    date: 'April 30, 2026 · 07:55 EAT',
-    location: 'Site A · Workshop',
-    reporter: 'Kamau Mutua',
-    reporterInitials: 'KM',
-    description: 'Small electrolyte spill occurred during battery top-up procedure. Sulfuric acid solution contacted the floor surface. Spill kit deployed within 4 minutes. No skin contact confirmed.',
-    rootCause: 'Immediate cause: battery overfilled during top-up. Area isolated and ventilated. Spill neutralised with sodium bicarbonate.',
-    status: 'Closed',
-  },
-]
+const API_BASE = 'http://127.0.0.1:5000/api'
 
 const BADGE_STYLES = {
   High:     { background: '#fdf0f0', color: '#8b1a1a', border: '1px solid #e8c0c0' },
@@ -49,12 +11,11 @@ const BADGE_STYLES = {
 }
 
 const STATUS_STYLES = {
-  Open:         { background: '#fdf0f0', color: '#8b1a1a' },
+  Open:           { background: '#fdf0f0', color: '#8b1a1a' },
   'Under Review': { background: '#fdf6e8', color: '#7a4a00' },
-  Closed:       { background: '#e8f2e9', color: '#1a4f24' },
+  Closed:         { background: '#e8f2e9', color: '#1a4f24' },
 }
 
-// ── FILTER BUTTON ────────────────────────────────────
 function FilterButton({ label, active, onClick }) {
   return (
     <button
@@ -77,8 +38,7 @@ function FilterButton({ label, active, onClick }) {
   )
 }
 
-// ── INCIDENT CARD ────────────────────────────────────
-function IncidentCard({ id, title, severity, date, location, reporter, reporterInitials, description, rootCause, status }) {
+function IncidentCard({ id, title, severity, date, time, location, reporter_name, description, status }) {
   const [rcaOpen, setRcaOpen] = useState(false)
   const badge = BADGE_STYLES[severity] || BADGE_STYLES.Low
   const statusStyle = STATUS_STYLES[status] || STATUS_STYLES.Open
@@ -107,7 +67,7 @@ function IncidentCard({ id, title, severity, date, location, reporter, reporterI
             {title}
           </h2>
           <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8a8070' }}>
-            {date} · {location}
+            {date} {time && `· ${time}`} · {location}
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-end', flexShrink: 0 }}>
@@ -149,7 +109,7 @@ function IncidentCard({ id, title, severity, date, location, reporter, reporterI
           </button>
           {rcaOpen && (
             <div style={{ padding: '14px', fontSize: '13px', color: '#4a4535', lineHeight: '1.6' }}>
-              {rootCause}
+              RCA investigation in progress. Assign to QHSE officer to complete 5-Why analysis.
             </div>
           )}
         </div>
@@ -166,9 +126,9 @@ function IncidentCard({ id, title, severity, date, location, reporter, reporterI
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '10px', fontWeight: '700', color: '#1a4f24',
           }}>
-            {reporterInitials}
+            {reporter_name ? reporter_name.split(' ').map(n => n[0]).join('') : '?'}
           </div>
-          Reported by <strong style={{ color: '#4a4535' }}>{reporter}</strong>
+          Reported by <strong style={{ color: '#4a4535' }}>{reporter_name}</strong>
         </div>
         <button style={{
           background: '#1a1810', color: '#fff', fontFamily: 'monospace',
@@ -182,14 +142,55 @@ function IncidentCard({ id, title, severity, date, location, reporter, reporterI
   )
 }
 
-// ── INCIDENT FEED ────────────────────────────────────
 function IncidentFeed() {
+  const [incidents, setIncidents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [activeFilter, setActiveFilter] = useState('All')
   const navigate = useNavigate()
 
+  // ── Fetch incidents from Flask API ───────────────
+  useEffect(() => {
+    setLoading(true)
+    fetch(`${API_BASE}/incidents`)
+      .then(res => {
+        if (!res.ok) throw new Error('API error')
+        return res.json()
+      })
+      .then(data => {
+        setIncidents(data.incidents)
+        setLoading(false)
+      })
+      .catch(err => {
+        setError('Could not load incidents. Is the Flask server running?')
+        setLoading(false)
+      })
+  }, [])
+
   const filteredIncidents = activeFilter === 'All'
-    ? INCIDENTS
-    : INCIDENTS.filter(inc => inc.severity === activeFilter)
+    ? incidents
+    : incidents.filter(inc => inc.severity === activeFilter)
+
+  if (loading) {
+    return (
+      <div style={{ background: '#f5f2eb', minHeight: '100vh', padding: '48px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8a8070', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+          Loading incidents from SafeEdge API...
+        </p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div style={{ background: '#f5f2eb', minHeight: '100vh', padding: '48px 24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#fdf0f0', border: '1px solid #e8c0c0', borderRadius: '8px', padding: '24px', textAlign: 'center' }}>
+          <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8b1a1a', textTransform: 'uppercase', marginBottom: '8px' }}>API Connection Error</p>
+          <p style={{ fontSize: '13px', color: '#4a4535' }}>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ background: '#f5f2eb', minHeight: '100vh', padding: '48px 24px', fontFamily: "'DM Sans', sans-serif" }}>
@@ -204,10 +205,9 @@ function IncidentFeed() {
               Incident Feed
             </h1>
             <p style={{ fontSize: '13px', color: '#8a8070', marginTop: '4px' }}>
-              Site A · June 2026 · {filteredIncidents.length} incident{filteredIncidents.length !== 1 ? 's' : ''}
+              Site A · {filteredIncidents.length} incident{filteredIncidents.length !== 1 ? 's' : ''} · <span style={{ color: '#5dca8a' }}>● Live</span>
             </p>
           </div>
-          {/* useNavigate — programmatic navigation to the form */}
           <button
             onClick={() => navigate('/incidents/new')}
             style={{
@@ -220,7 +220,6 @@ function IncidentFeed() {
           </button>
         </header>
 
-        {/* Filter bar */}
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '24px' }}>
           {['All', 'High', 'Medium', 'NearMiss'].map(filter => (
             <FilterButton
@@ -232,7 +231,6 @@ function IncidentFeed() {
           ))}
         </div>
 
-        {/* Incident list */}
         {filteredIncidents.length > 0
           ? filteredIncidents.map(incident => (
               <IncidentCard key={incident.id} {...incident} />

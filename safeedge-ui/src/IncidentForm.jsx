@@ -1,10 +1,5 @@
 import { useState } from 'react'
 
-// ── M2 INCIDENT FORM COMPONENT ───────────────────────
-// Controlled inputs — every field is driven by useState
-// Mirror: fCC Superhero Application Form
-// SafeEdge: M2 Incident Management — New Incident Report
-
 const INITIAL_STATE = {
   title: '',
   type: '',
@@ -23,54 +18,82 @@ const INITIAL_STATE = {
 function IncidentForm({ onSubmit }) {
   const [form, setForm] = useState(INITIAL_STATE)
   const [submitted, setSubmitted] = useState(false)
+  const [submittedIncident, setSubmittedIncident] = useState(null)
   const [errors, setErrors] = useState({})
 
-  // ── HANDLERS ──────────────────────────────────────
-  // Single handler for all text/select inputs
   function handleChange(e) {
     const { name, value, type, checked } = e.target
     setForm(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }))
-    // Clear error on change
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
   }
 
-  // ── VALIDATION ────────────────────────────────────
   function validate() {
     const newErrors = {}
-    if (!form.title.trim())        newErrors.title = 'Incident title is required'
-    if (!form.type)                newErrors.type = 'Incident type is required'
-    if (!form.severity)            newErrors.severity = 'Severity is required'
-    if (!form.date)                newErrors.date = 'Date is required'
-    if (!form.description.trim())  newErrors.description = 'Description is required'
-    if (!form.reporterName.trim()) newErrors.reporterName = 'Reporter name is required'
+    if (!form.title.trim())         newErrors.title = 'Incident title is required'
+    if (!form.type)                 newErrors.type = 'Incident type is required'
+    if (!form.severity)             newErrors.severity = 'Severity is required'
+    if (!form.date)                 newErrors.date = 'Date is required'
+    if (!form.description.trim())   newErrors.description = 'Description is required'
+    if (!form.reporterName.trim())  newErrors.reporterName = 'Reporter name is required'
     if (!form.reporterEmail.trim()) newErrors.reporterEmail = 'Reporter email is required'
     return newErrors
   }
 
-  // ── SUBMIT ────────────────────────────────────────
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    setSubmitted(true)
-    if (onSubmit) onSubmit(form)
+
+    try {
+      const response = await fetch('http://127.0.0.1:5000/api/incidents', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title:          form.title,
+          type:           form.type,
+          severity:       form.severity,
+          site:           form.site || 'site-a',
+          date:           form.date,
+          time:           form.time,
+          location:       form.location,
+          description:    form.description,
+          reporter_name:  form.reporterName,
+          reporter_email: form.reporterEmail,
+          lost_time:      form.lostTime,
+          rca_required:   form.rcaRequired,
+        }),
+      })
+
+      if (!response.ok) {
+        const err = await response.json()
+        setErrors({ submit: err.error || 'Submission failed' })
+        return
+      }
+
+      const data = await response.json()
+      setSubmitted(true)
+      setSubmittedIncident(data.incident)
+
+    } catch (err) {
+      setErrors({ submit: 'Could not connect to SafeEdge API. Is the Flask server running?' })
+    }
   }
 
   function handleReset() {
     setForm(INITIAL_STATE)
     setErrors({})
     setSubmitted(false)
+    setSubmittedIncident(null)
   }
 
-  // ── STYLES ────────────────────────────────────────
   const s = {
     page: { background: '#f5f2eb', minHeight: '100vh', padding: '48px 24px', fontFamily: "'DM Sans', sans-serif" },
     wrap: { maxWidth: '720px', margin: '0 auto' },
@@ -88,7 +111,8 @@ function IncidentForm({ onSubmit }) {
     inputError: { padding: '10px 12px', background: '#fdf0f0', border: '1px solid #e8c0c0', borderRadius: '4px', fontFamily: 'inherit', fontSize: '13px', color: '#1a1810', width: '100%' },
     error: { fontSize: '11px', color: '#8b1a1a' },
     checkRow: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: '#4a4535', cursor: 'pointer' },
-    footer: { padding: '20px 28px', background: '#f0ece0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    footer: { padding: '20px 28px', background: '#f0ece0', display: 'flex', flexDirection: 'column', gap: '10px' },
+    footerRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     btnSubmit: { background: '#2d7a3e', color: '#fff', fontFamily: 'Georgia, serif', fontSize: '14px', fontWeight: '700', padding: '11px 28px', border: 'none', borderRadius: '4px', cursor: 'pointer' },
     btnReset: { background: 'transparent', color: '#4a4535', fontSize: '13px', padding: '11px 20px', border: '1px solid #ddd8c8', borderRadius: '4px', cursor: 'pointer' },
     successBox: { background: '#e8f2e9', border: '1px solid #b8d8bc', borderRadius: '8px', padding: '32px', textAlign: 'center' },
@@ -99,23 +123,24 @@ function IncidentForm({ onSubmit }) {
   const severityOptions = ['Critical', 'High', 'Medium', 'Low']
 
   // ── SUCCESS STATE ─────────────────────────────────
-  if (submitted) {
+  if (submitted && submittedIncident) {
     return (
       <div style={s.page}>
         <div style={s.wrap}>
           <div style={s.successBox}>
             <div style={s.successTitle}>✓ Incident Report Submitted</div>
             <p style={s.successSub}>
-              Reference: INC-{new Date().getFullYear()}-{String(Math.floor(Math.random() * 900) + 100)}<br />
+              Reference: <strong>{submittedIncident.id}</strong><br />
               Assigned to site QHSE officer for investigation.
             </p>
             <div style={{ marginBottom: '16px', textAlign: 'left', background: '#fff', border: '1px solid #b8d8bc', borderRadius: '6px', padding: '16px' }}>
               <p style={{ fontFamily: 'monospace', fontSize: '11px', color: '#8a8070', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Submitted data</p>
-              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Title:</strong> {form.title}</p>
-              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Type:</strong> {form.type}</p>
-              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Severity:</strong> {form.severity}</p>
-              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Reporter:</strong> {form.reporterName}</p>
-              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Lost Time:</strong> {form.lostTime ? 'Yes' : 'No'}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Title:</strong> {submittedIncident.title}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Type:</strong> {submittedIncident.type}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Severity:</strong> {submittedIncident.severity}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Reporter:</strong> {submittedIncident.reporter_name}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Status:</strong> {submittedIncident.status}</p>
+              <p style={{ fontSize: '13px', color: '#1a4f24' }}><strong>Created:</strong> {submittedIncident.created_at}</p>
             </div>
             <button onClick={handleReset} style={s.btnSubmit}>
               Submit Another Report
@@ -137,12 +162,11 @@ function IncidentForm({ onSubmit }) {
         </header>
 
         <form onSubmit={handleSubmit} noValidate>
-
-          {/* Section 1 — Identification */}
           <div style={s.card}>
+
+            {/* Section 1 — Identification */}
             <div style={s.section}>
               <div style={s.sectionLabel}>Section 1 · Identification</div>
-
               <div style={s.row}>
                 <div style={s.fieldGroup}>
                   <label style={s.label}>Incident Title *</label>
@@ -173,7 +197,6 @@ function IncidentForm({ onSubmit }) {
                   {errors.type && <span style={s.error}>{errors.type}</span>}
                 </div>
               </div>
-
               <div style={s.row}>
                 <div style={s.fieldGroup}>
                   <label style={s.label}>Date *</label>
@@ -232,26 +255,13 @@ function IncidentForm({ onSubmit }) {
                 </div>
                 {errors.severity && <span style={s.error}>{errors.severity}</span>}
               </div>
-
               <div style={{ marginTop: '20px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
                 <label style={s.checkRow}>
-                  <input
-                    type="checkbox"
-                    name="lostTime"
-                    checked={form.lostTime}
-                    onChange={handleChange}
-                    style={{ accentColor: '#1a4f24' }}
-                  />
+                  <input type="checkbox" name="lostTime" checked={form.lostTime} onChange={handleChange} style={{ accentColor: '#1a4f24' }} />
                   Lost Time Incident (LTI)
                 </label>
                 <label style={s.checkRow}>
-                  <input
-                    type="checkbox"
-                    name="rcaRequired"
-                    checked={form.rcaRequired}
-                    onChange={handleChange}
-                    style={{ accentColor: '#1a4f24' }}
-                  />
+                  <input type="checkbox" name="rcaRequired" checked={form.rcaRequired} onChange={handleChange} style={{ accentColor: '#1a4f24' }} />
                   RCA Required
                 </label>
               </div>
@@ -307,14 +317,19 @@ function IncidentForm({ onSubmit }) {
 
             {/* Form Footer */}
             <div style={s.footer}>
-              <span style={{ fontSize: '12px', color: '#8a8070' }}>* Required fields</span>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" onClick={handleReset} style={s.btnReset}>Clear</button>
-                <button type="submit" style={s.btnSubmit}>Submit Report</button>
+              {errors.submit && (
+                <p style={{ fontSize: '12px', color: '#8b1a1a' }}>{errors.submit}</p>
+              )}
+              <div style={s.footerRow}>
+                <span style={{ fontSize: '12px', color: '#8a8070' }}>* Required fields</span>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" onClick={handleReset} style={s.btnReset}>Clear</button>
+                  <button type="submit" style={s.btnSubmit}>Submit Report</button>
+                </div>
               </div>
             </div>
-          </div>
 
+          </div>
         </form>
       </div>
     </div>
